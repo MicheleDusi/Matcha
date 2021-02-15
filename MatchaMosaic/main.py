@@ -1,3 +1,4 @@
+from coordinates import Coordinator, AverageSamplerOperator
 from tiles import TileFactory
 from mosaic import Mosaic
 from math import sqrt
@@ -14,8 +15,16 @@ IMAGE_COLS: int = 19 * 3
 
 # Main
 if __name__ == '__main__':
+    print('Defining coordinates extraction strategy...')
+    coor: Coordinator = Coordinator()
+    coor.add_operator(operator=AverageSamplerOperator(grid=(1, 1), weight=1))
+    coor.add_operator(operator=AverageSamplerOperator(grid=(2, 2), weight=1))
+    coor.finalize()
+    print('Done')
+
     print('Creating tiles... ')
-    tiles = TileFactory.create_from_file(TILES_INFO, TILES_DIRECTORY)
+    factory = TileFactory(coordinator=coor)
+    tiles = factory.create_from_file(TILES_INFO, TILES_DIRECTORY)
     print('Done')
 
     total = TileFactory.count_quantity(tiles_list=tiles)
@@ -28,7 +37,7 @@ if __name__ == '__main__':
     # t.print_coords()
 
     print("Creating mosaic...")
-    mos = Mosaic(IMAGE_FILE, tiles=tiles, grid=(IMAGE_ROWS, IMAGE_COLS), reinsertion=True)
+    mos = Mosaic(targetpath=IMAGE_FILE, coordinator=coor, tiles=tiles, grid=(IMAGE_ROWS, IMAGE_COLS), reinsertion=True)
     print('Done')
 
     print("Composing mosaic...")

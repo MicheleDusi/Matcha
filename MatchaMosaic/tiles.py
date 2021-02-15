@@ -1,10 +1,10 @@
-import numpy as np
 import os
-from matplotlib import image
+
+import numpy as np
+
+from coordinates import Coordinator
 from utilities import show_image, load_image
 import csv
-
-from coordinates import extract_coords
 
 # Margins for the preprocessing of a tile image
 MARGIN_TOP = 100
@@ -22,7 +22,7 @@ class Tile:
     Tile class. A tile represents one usable asset in the final mosaic image.
     """
 
-    def __init__(self, name: str, img, quantity: int = 1):
+    def __init__(self, name: str, img: np.ndarray, coordinator: Coordinator, quantity: int = 1):
         """
         Constructor.
         :param name: The name used to univocally identify the tile
@@ -35,7 +35,7 @@ class Tile:
 
         cropped_img = self.preprocess_tile_image(img)
         self.__tile_image = cropped_img
-        self.coords = extract_coords(cropped_img)
+        self.coords = coordinator.compute(cropped_img)
 
         if quantity < 1:
             raise Exception("No tile can have zero quantity available. Please set a positive number")
@@ -90,11 +90,12 @@ class Tile:
 
 class TileFactory:
 
-    def __init__(self):
-        pass
+    def __init__(self, coordinator: Coordinator):
+        if not coordinator:
+            raise Exception("Impossible to create tiles without a system to extract coordinates")
+        self.__coordinator = coordinator
 
-    @classmethod
-    def create_from_folder(cls, tiles_folder: str) -> [Tile]:
+    def create_from_folder(self, tiles_folder: str) -> [Tile]:
         """
         Creates a tiles list from a folder. In the folder this method expects to find the images of the tiles.
         Every image file (with ".png" or ".jpg" extension!) is used as a tile.
@@ -114,11 +115,10 @@ class TileFactory:
                 # Opening the image from the tiles folder, as a np array
                 img = load_image(filename)
                 # Creating the tile
-                tiles_list.append(Tile(tilename, img))
+                tiles_list.append(Tile(name=tilename, img=img, coordinator=self.__coordinator))
         return tiles_list
 
-    @classmethod
-    def create_from_file(cls, tiles_info: str, tiles_folder: str = "") -> [Tile]:
+    def create_from_file(self, tiles_info: str, tiles_folder: str = "") -> [Tile]:
         """
         Creates a tiles list from a specific CSV file indicating:
         - The identification name for each tile     (Column name: name)
@@ -156,7 +156,7 @@ class TileFactory:
                 # Opening the image from the tiles folder, as a np array
                 img = load_image(tiles_folder + filename)
                 # Creating the tile
-                tile = Tile(name=row[CSV_COL_NAME], img=img, quantity=quantity)
+                tile = Tile(name=row[CSV_COL_NAME], img=img, coordinator=self.__coordinator, quantity=quantity)
                 tiles_list.append(tile)
 
         print(f"{len(tiles_list)} tiles correctly created")
@@ -168,5 +168,3 @@ class TileFactory:
         for t in tiles_list:
             count += t.quantity
         return count
-
-

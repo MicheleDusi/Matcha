@@ -1,5 +1,7 @@
 import numpy as np
-from tiles import extract_coords, Tile
+
+from coordinates import Coordinator
+from tiles import Tile
 
 
 class Cell:
@@ -7,7 +9,7 @@ class Cell:
     Class representing a single cell of a mosaic.
     """
 
-    def __init__(self, position: (int, int), img_cut, tiles: [Tile]):
+    def __init__(self, position: (int, int), img_cut: np.ndarray, coordinator: Coordinator, tiles: [Tile]):
         """
         Creates a cell from an image cut.
         :param position: The number of row and column identifying the cell (a tuple)
@@ -15,7 +17,7 @@ class Cell:
         :param tiles: the referencing tiles
         """
         self.__pos = position
-        self.coords = extract_coords(img_cut)
+        self.coords = coordinator.compute(img_cut)
         # Order the tiles by increasing distances
         self.tiles = sorted(tiles, key=lambda x: self.measure_distance(x))
         self.assigned_tile = None
@@ -78,4 +80,3 @@ class Cell:
     def measure_distance(self, tile: Tile) -> float:
         dist = np.linalg.norm(self.coords - tile.coords)
         return dist
-

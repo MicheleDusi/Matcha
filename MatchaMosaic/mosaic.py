@@ -1,6 +1,7 @@
 import numpy as np
 from cells import Cell
-from matplotlib import image
+from coordinates import Coordinator
+from tiles import Tile
 from utilities import show_image, load_image
 import cv2
 
@@ -13,16 +14,28 @@ class Mosaic:
     A mosaic is the representation of an image throught the available tiles.
     """
 
-    def __init__(self, filename: str, tiles: [],
+    def __init__(self, targetpath: str,
+                 coordinator: Coordinator,
+                 tiles: [Tile],
                  grid: (int, int) = DEFAULT_GRID_SHAPE,
                  reinsertion: bool = DEFAULT_REINSERTION):
-        self.__original = load_image(filename)
+
+        if not targetpath:
+            raise Exception("Cannot create a mosaic without the target image")
+        self.__original = load_image(targetpath)
+
+        if not coordinator:
+            raise Exception("Cannot create a mosaic without specifying how to extract coordinates")
+        self.__coordinator = coordinator
+
+        if not tiles or len(tiles) == 0:
+            raise Exception("Cannot create a mosaic without a tiles list")
+
         self.__grid = grid
         cell_h = int(self.original.shape[0] / grid[0])
         cell_w = int(self.original.shape[1] / grid[1])
         print(f"Set cells with dimension: vertical = {cell_h}, horizontal = {cell_w}")
         self.__scale = (cell_h, cell_w)
-        self.__reinsertion = reinsertion
         self.cells = []
         for i in range(grid[0]):
             for j in range(grid[1]):
@@ -34,9 +47,12 @@ class Mosaic:
                             slice(j * cell_w, (j + 1) * cell_w),
                             :
                         ],
+                        self.__coordinator,
                         tiles
                     )
                 )
+
+        self.__reinsertion = reinsertion
 
     def assign_tiles(self) -> None:
         """
